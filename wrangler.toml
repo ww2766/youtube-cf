@@ -17,4 +17,14 @@ pattern = "/api/*"
 script = "functions/[[routes]].js"
 
 [env.production]
-vars = { YOUTUBE_API_KEY = "your_actual_api_key" } 
+vars = { YOUTUBE_API_KEY = "your_actual_api_key" }
+
+[env.production.build]
+command = """
+echo "Checking environment variables..."
+if [ -z "$YOUTUBE_API_KEY" ]; then
+  echo "Error: YOUTUBE_API_KEY is not set!"
+  exit 1
+fi
+npm run build
+""" 

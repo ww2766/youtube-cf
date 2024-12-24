@@ -37,6 +37,9 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
 
+      console.log('请求状态:', response.status);
+      console.log('响应头:', Object.fromEntries(response.headers));
+
       const text = await response.text();
       console.log('API响应:', { status: response.status, text });
 

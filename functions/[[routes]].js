@@ -4,7 +4,12 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url);
-      console.log('Request URL:', url.pathname);
+      console.log('[Routes] Request URL:', url.pathname);
+      console.log('[Routes] Environment check:', {
+        hasYouTubeApiKey: !!env.YOUTUBE_API_KEY,
+        method: request.method,
+        headers: Object.fromEntries(request.headers)
+      });
 
       // 处理CORS预检请求
       if (request.method === "OPTIONS") {
@@ -19,6 +24,10 @@ export default {
 
       // API路由处理
       if (url.pathname === '/api/analyze') {
+        console.log('[Routes] 处理 /api/analyze 请求');
+        console.log('[Routes] 请求方法:', request.method);
+        console.log('[Routes] 请求头:', Object.fromEntries(request.headers));
+        
         const { onRequest } = await import('./api/analyze');
         return onRequest({ request, env });
       }
@@ -32,7 +41,7 @@ export default {
         }
       });
     } catch (error) {
-      console.error('Route error:', error);
+      console.error('[Routes] Error:', error);
       return new Response('Internal Server Error', { 
         status: 500,
         headers: {

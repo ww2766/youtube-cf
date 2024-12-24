@@ -4,6 +4,14 @@ interface Env {
 
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
+    console.log('[Analyze] Starting request processing');
+    console.log('[Analyze] Environment variables:', {
+      YOUTUBE_API_KEY: !!context.env.YOUTUBE_API_KEY,
+      url: context.request.url,
+      method: context.request.method,
+      headers: Object.fromEntries(context.request.headers)
+    });
+
     console.log('API Key configured:', !!context.env.YOUTUBE_API_KEY);
     
     if (!context.env.YOUTUBE_API_KEY) {
@@ -11,7 +19,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'API configuration error. Please contact administrator.'
+          error: 'API 配置错误，请联系管理员。'
         }),
         {
           status: 500,
@@ -115,7 +123,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       }
     );
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('[Analyze] Error:', error);
     return new Response(
       JSON.stringify({
         success: false,
@@ -152,9 +160,3 @@ function extractVideoId(url: string): string | null {
     return null;
   }
 } 
-
-console.log('环境变量:', {
-  YOUTUBE_API_KEY: !!context.env.YOUTUBE_API_KEY,
-  url: context.request.url,
-  method: context.request.method
-}); 
