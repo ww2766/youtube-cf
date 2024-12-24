@@ -13,7 +13,7 @@ bucket = ".next"
 format = "service-worker"
 
 [[routes]]
-pattern = "/api/*"
+pattern = "*/*"
 script = "functions/[[routes]].js"
 
 [env.production]
