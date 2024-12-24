@@ -7,9 +7,17 @@ export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json();
+    if (!request.body) {
+      throw new APIError('请求体不能为空', 400);
+    }
+
+    const { url } = await request.json().catch(() => ({}));
     
-    if (!url || !isValidYouTubeUrl(url)) {
+    if (!url || typeof url !== 'string') {
+      throw new APIError('请提供有效的视频URL', 400);
+    }
+
+    if (!isValidYouTubeUrl(url)) {
       throw new APIError('无效的YouTube视频链接', 400);
     }
 
@@ -23,52 +31,101 @@ export async function POST(request: NextRequest) {
       throw new APIError('无法提取视频ID', 400);
     }
 
-    const apiUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
-    apiUrl.searchParams.set('key', apiKey);
-    apiUrl.searchParams.set('id', videoId);
-    apiUrl.searchParams.set('part', 'snippet,contentDetails,statistics');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+    try {
+      const apiUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+      apiUrl.searchParams.set('key', apiKey);
+      apiUrl.searchParams.set('id', videoId);
+      apiUrl.searchParams.set('part', 'snippet,contentDetails,statistics');
 
-    if (!response.ok) {
-      throw new APIError(
-        data.error?.message || 'YouTube API请求失败', 
-        response.status
-      );
+      const response = await fetch(apiUrl.toString(), {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new APIError(
+          error.error?.message || `YouTube API请求失败: ${response.status}`, 
+          response.status
+        );
+      }
+
+      const data = await response.json();
+
+      if (!data.items?.length) {
+        throw new APIError('未找到视频', 404);
+      }
+
+      const video = data.items[0];
+
+      return NextResponse.json({
+        success: true,
+        videoInfo: {
+          id: video.id,
+          title: video.snippet?.title || '未知标题',
+          description: video.snippet?.description || '',
+          thumbnail: video.snippet?.thumbnails?.maxres?.url || 
+                    video.snippet?.thumbnails?.high?.url ||
+                    video.snippet?.thumbnails?.default?.url ||
+                    '',
+          duration: video.contentDetails?.duration ? 
+                   formatDuration(video.contentDetails.duration) : 
+                   '未知',
+          author: video.snippet?.channelTitle || '未知作者',
+          publishedAt: video.snippet?.publishedAt || '',
+          statistics: {
+            views: parseInt(video.statistics?.viewCount || '0'),
+            likes: parseInt(video.statistics?.likeCount || '0'),
+            comments: parseInt(video.statistics?.commentCount || '0')
+          },
+          tags: video.snippet?.tags || [],
+          category: video.snippet?.categoryId || '',
+          privacyStatus: video.status?.privacyStatus || 'public',
+          defaultLanguage: video.snippet?.defaultLanguage || 'unknown',
+          defaultAudioLanguage: video.snippet?.defaultAudioLanguage || 'unknown'
+        }
+      }, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      });
+    } catch (error) {
+      clearTimeout(timeout);
+      throw error;
+    }
+  } catch (error) {
+    if (error instanceof APIError) {
+      return NextResponse.json({
+        success: false,
+        error: error.message
+      }, {
+        status: error.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      });
     }
 
-    if (!data.items?.length) {
-      throw new APIError('未找到视频', 404);
-    }
-
-    const video = data.items[0];
-
+    console.error('API Error:', error);
     return NextResponse.json({
-      success: true,
-      videoInfo: {
-        id: video.id,
-        title: video.snippet.title,
-        description: video.snippet.description,
-        thumbnail: video.snippet.thumbnails.maxres?.url || 
-                  video.snippet.thumbnails.high?.url ||
-                  video.snippet.thumbnails.default?.url,
-        duration: formatDuration(video.contentDetails.duration),
-        author: video.snippet.channelTitle,
-        publishedAt: video.snippet.publishedAt,
-        statistics: {
-          views: parseInt(video.statistics.viewCount),
-          likes: parseInt(video.statistics.likeCount),
-          comments: parseInt(video.statistics.commentCount)
-        },
-        tags: video.snippet.tags || [],
-        category: video.snippet.categoryId,
-        privacyStatus: video.status?.privacyStatus,
-        defaultLanguage: video.snippet.defaultLanguage || 'unknown',
-        defaultAudioLanguage: video.snippet.defaultAudioLanguage || 'unknown'
+      success: false,
+      error: '服务器内部错误'
+    }, {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store'
       }
     });
-  } catch (error) {
-    return handleAPIError(error);
   }
 } 
