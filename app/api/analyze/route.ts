@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new APIError(data.error?.message || 'YouTube API请求失败', response.status);
+      throw new APIError(
+        data.error?.message || 'YouTube API请求失败', 
+        response.status
+      );
     }
 
     if (!data.items?.length) {
@@ -38,6 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const video = data.items[0];
+
     return NextResponse.json({
       success: true,
       videoInfo: {
@@ -45,7 +49,8 @@ export async function POST(request: NextRequest) {
         title: video.snippet.title,
         description: video.snippet.description,
         thumbnail: video.snippet.thumbnails.maxres?.url || 
-                  video.snippet.thumbnails.high.url,
+                  video.snippet.thumbnails.high?.url ||
+                  video.snippet.thumbnails.default?.url,
         duration: formatDuration(video.contentDetails.duration),
         author: video.snippet.channelTitle,
         publishedAt: video.snippet.publishedAt,
@@ -53,7 +58,12 @@ export async function POST(request: NextRequest) {
           views: parseInt(video.statistics.viewCount),
           likes: parseInt(video.statistics.likeCount),
           comments: parseInt(video.statistics.commentCount)
-        }
+        },
+        tags: video.snippet.tags || [],
+        category: video.snippet.categoryId,
+        privacyStatus: video.status?.privacyStatus,
+        defaultLanguage: video.snippet.defaultLanguage || 'unknown',
+        defaultAudioLanguage: video.snippet.defaultAudioLanguage || 'unknown'
       }
     });
   } catch (error) {

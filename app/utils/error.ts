@@ -1,3 +1,5 @@
+'use client'
+
 export class APIError extends Error {
   constructor(
     message: string,
