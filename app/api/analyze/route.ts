@@ -110,11 +110,13 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeout);
       throw error;
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    const err = error as Error;
+    
     console.error('API Error:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
+      name: err?.name || 'UnknownError',
+      message: err?.message || 'Unknown error occurred',
+      stack: err?.stack || 'No stack trace available'
     });
 
     if (error instanceof APIError) {
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: '服务器内部错误',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
     }, {
       status: 500,
       headers: {
