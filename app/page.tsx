@@ -1,16 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { FaYoutube, FaSpinner } from 'react-icons/fa';
+
+interface VideoInfo {
+  title: string;
+  thumbnail: string;
+  duration: string;
+  author: string;
+}
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setVideoInfo(null);
 
     try {
       const response = await fetch('/api/analyze', {
@@ -21,9 +31,8 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
 
-      console.log('Response status:', response.status);
       const text = await response.text();
-      console.log('Response text:', text);
+      console.log('Response:', { status: response.status, text });
 
       let data;
       try {
@@ -38,7 +47,7 @@ export default function Home() {
       }
 
       if (data.success) {
-        console.log('Video info:', data.videoInfo);
+        setVideoInfo(data.videoInfo);
       } else {
         throw new Error(data.error || 'Unknown error occurred');
       }
@@ -51,30 +60,63 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-8">YouTube Video Analyzer</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Enter YouTube URL"
-            className="w-full p-2 border rounded"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full p-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
-          >
-            {loading ? 'Analyzing...' : 'Analyze'}
-          </button>
-        </form>
+    <main className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h1 className="flex items-center justify-center text-5xl font-bold mb-4">
+            <FaYoutube className="text-red-600 mr-4" />
+            YouTube Analyzer
+          </h1>
+          <p className="text-gray-400">
+            Enter a YouTube URL to analyze video information
+          </p>
+        </div>
+
+        <div className="bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Paste YouTube URL here..."
+                className="w-full p-4 pr-32 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="absolute right-2 top-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:bg-gray-500"
+              >
+                {loading ? (
+                  <FaSpinner className="animate-spin" />
+                ) : (
+                  'Analyze'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
+          <div className="bg-red-900/50 border border-red-500 text-red-200 rounded-lg p-4 mb-8">
             {error}
+          </div>
+        )}
+
+        {videoInfo && (
+          <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+            <img
+              src={videoInfo.thumbnail}
+              alt={videoInfo.title}
+              className="w-full object-cover"
+            />
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-2">{videoInfo.title}</h2>
+              <div className="text-gray-400">
+                <p>Author: {videoInfo.author}</p>
+                <p>Duration: {videoInfo.duration}</p>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -4,7 +4,8 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url);
-      
+      console.log('Request URL:', url.pathname);
+
       // 处理CORS预检请求
       if (request.method === "OPTIONS") {
         return new Response(null, {
@@ -19,14 +20,26 @@ export default {
       // API路由处理
       if (url.pathname === '/api/analyze') {
         const { onRequest } = await import('./api/analyze');
-        const response = await onRequest({ request, env });
-        return handleCORS(response);
+        return onRequest({ request, env });
       }
 
-      return handleCORS(new Response('Not Found', { status: 404 }));
+      // 如果不是API请求，返回404
+      return new Response('Not Found', { 
+        status: 404,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     } catch (error) {
       console.error('Route error:', error);
-      return handleCORS(new Response('Internal Server Error', { status: 500 }));
+      return new Response('Internal Server Error', { 
+        status: 500,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
   }
 } 
