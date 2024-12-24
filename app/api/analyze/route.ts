@@ -11,7 +11,10 @@ export async function POST(request: NextRequest) {
       throw new APIError('请求体不能为空', 400);
     }
 
-    const { url } = await request.json().catch(() => ({}));
+    const { url } = await request.json().catch(() => {
+      console.error('JSON解析失败');
+      return {};
+    });
     
     if (!url || typeof url !== 'string') {
       throw new APIError('请提供有效的视频URL', 400);
@@ -22,6 +25,11 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = process.env.YOUTUBE_API_KEY;
+    console.log('API Key status:', {
+      exists: !!apiKey,
+      length: apiKey?.length || 0
+    });
+    
     if (!apiKey) {
       throw new APIError('API密钥未配置', 500);
     }
@@ -103,6 +111,12 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   } catch (error) {
+    console.error('API Error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+
     if (error instanceof APIError) {
       return NextResponse.json({
         success: false,
@@ -116,10 +130,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.error('API Error:', error);
     return NextResponse.json({
       success: false,
-      error: '服务器内部错误'
+      error: '服务器内部错误',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, {
       status: 500,
       headers: {
