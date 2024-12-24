@@ -36,7 +36,6 @@ export default function Home() {
     setVideoInfo(null);
 
     try {
-      // 使用相对路径
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
@@ -45,18 +44,19 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || '请求失败');
+        const errorData = await response.json().catch(() => ({ error: '请求失败' }));
+        throw new Error(errorData.error || '请求失败');
       }
 
+      const data = await response.json();
       if (!data.success) {
-        throw new Error(data.error || '解析视频失败');
+        throw new Error(data.error || '解析失败');
       }
 
       setVideoInfo(data.videoInfo);
     } catch (err) {
+      console.error('请求错误:', err);
       setError(err instanceof Error ? err.message : '未知错误');
     } finally {
       setLoading(false);
