@@ -5,7 +5,10 @@ interface Env {
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
     const { url } = await context.request.json();
+    console.log('Received URL:', url);
+
     const videoId = extractVideoId(url);
+    console.log('Extracted video ID:', videoId);
 
     if (!videoId) {
       return new Response(
@@ -13,13 +16,22 @@ export async function onRequest(context: { request: Request; env: Env }) {
           success: false,
           error: 'Invalid YouTube URL'
         }),
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
       );
     }
 
     const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${context.env.YOUTUBE_API_KEY}&part=snippet,contentDetails`;
+    console.log('API URL:', apiUrl);
+
     const response = await fetch(apiUrl);
     const data = await response.json();
+    console.log('API Response:', data);
 
     if (!data.items || data.items.length === 0) {
       return new Response(
@@ -27,7 +39,13 @@ export async function onRequest(context: { request: Request; env: Env }) {
           success: false,
           error: 'Video not found'
         }),
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
       );
     }
 
@@ -61,12 +79,19 @@ export async function onRequest(context: { request: Request; env: Env }) {
       }
     );
   } catch (error) {
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: 'Failed to analyze video'
       }),
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      }
     );
   }
 }
