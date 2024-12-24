@@ -13,12 +13,12 @@ bucket = ".next"
 format = "service-worker"
 
 [[routes]]
-pattern = "api/*"
+pattern = "/api/*"
 script = "functions/[[routes]].js"
 
 [env.production]
 routes = [
-  { pattern = "youtube-cf.pages.dev", custom_domain = true }
+  { pattern = "youtube.inav.news", custom_domain = true }
 ]
 vars = { YOUTUBE_API_KEY = "your_actual_api_key" }
 

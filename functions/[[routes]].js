@@ -4,69 +4,85 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url);
-      console.log('[Routes] 完整请求URL:', request.url);
-      console.log('[Routes] 主机名:', url.hostname);
-      console.log('[Routes] 路径:', url.pathname);
-      console.log('[Routes] 环境检查:', {
-        hasYouTubeApiKey: !!env.YOUTUBE_API_KEY,
-        method: request.method,
-        headers: Object.fromEntries(request.headers)
+      
+      // 详细的请求日志
+      console.log('[Routes] 请求详情:', {
+        完整URL: request.url,
+        主机名: url.hostname,
+        路径: url.pathname,
+        方法: request.method,
+        API密钥存在: !!env.YOUTUBE_API_KEY,
+        请求头: Object.fromEntries(request.headers)
       });
 
-      // 处理CORS预检请求
+      // 处理所有路由的 CORS
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      };
+
+      // 处理 CORS 预检请求
       if (request.method === "OPTIONS") {
-        return new Response(null, {
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
-        });
+        return new Response(null, { headers: corsHeaders });
       }
 
-      // 移除开头的斜杠进行匹配
-      const path = url.pathname.replace(/^\//, '');
-      console.log('[Routes] 处理路径:', path);
+      // API 路由处理
+      if (url.pathname === '/api/analyze') {
+        console.log('[Routes] 处理分析请求');
+        
+        try {
+          const { onRequest } = await import('./api/analyze');
+          const response = await onRequest({ request, env });
+          
+          // 添加 CORS 头
+          const headers = new Headers(response.headers);
+          Object.entries(corsHeaders).forEach(([key, value]) => {
+            headers.set(key, value);
+          });
 
-      // API路由处理
-      if (path === 'api/analyze') {
-        console.log('[Routes] 处理 api/analyze 请求');
-        console.log('[Routes] 请求方法:', request.method);
-        console.log('[Routes] 请求头:', Object.fromEntries(request.headers));
-        
-        const { onRequest } = await import('./api/analyze');
-        const response = await onRequest({ request, env });
-        
-        // 确保返回正确的CORS头
-        const headers = new Headers(response.headers);
-        headers.set('Access-Control-Allow-Origin', '*');
-        headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        headers.set('Access-Control-Allow-Headers', 'Content-Type');
-        
-        return new Response(response.body, {
-          status: response.status,
-          headers
-        });
+          return new Response(response.body, {
+            status: response.status,
+            headers
+          });
+        } catch (e) {
+          console.error('[Routes] API处理错误:', e);
+          return new Response(JSON.stringify({
+            error: '处理请求时发生错误',
+            details: e.message
+          }), {
+            status: 500,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
       }
 
-      // 如果不是API请求，返回404
-      return new Response(JSON.stringify({ error: 'Not Found' }), { 
+      // 404 响应
+      console.log('[Routes] 未找到匹配的路由:', url.pathname);
+      return new Response(JSON.stringify({
+        error: '未找到请求的资源',
+        path: url.pathname
+      }), {
         status: 404,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          ...corsHeaders,
+          'Content-Type': 'application/json'
         }
       });
+
     } catch (error) {
-      console.error('[Routes] 错误:', error);
-      return new Response(JSON.stringify({ 
-        error: '服务器内部错误',
-        details: error.message 
-      }), { 
+      console.error('[Routes] 全局错误:', error);
+      return new Response(JSON.stringify({
+        error: '服务器错误',
+        details: error.message
+      }), {
         status: 500,
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          ...corsHeaders,
+          'Content-Type': 'application/json'
         }
       });
     }
