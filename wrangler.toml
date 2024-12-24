@@ -12,7 +12,7 @@ bucket = ".next"
 [build.upload]
 format = "service-worker"
 
-[routes]
+[[routes]]
 pattern = "/api/*"
 script = "functions/[[routes]].js"
 

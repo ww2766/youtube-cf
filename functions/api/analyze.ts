@@ -152,3 +152,9 @@ function extractVideoId(url: string): string | null {
     return null;
   }
 } 
+
+console.log('环境变量:', {
+  YOUTUBE_API_KEY: !!context.env.YOUTUBE_API_KEY,
+  url: context.request.url,
+  method: context.request.method
+}); 
