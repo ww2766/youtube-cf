@@ -17,4 +17,7 @@ pattern = "/api/*"
 script = "api/[[route]].js"
 
 [env.production]
-vars = { YOUTUBE_API_KEY = "" } 
+vars = { 
+  YOUTUBE_API_KEY = "",
+  CLOUDFLARE_COMPATIBILITY_FLAG = "nodejs_compat"
+} 
