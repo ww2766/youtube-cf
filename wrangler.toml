@@ -12,9 +12,9 @@ bucket = ".next"
 [build.upload]
 format = "service-worker"
 
-[[routes]]
+[routes]
 pattern = "/api/*"
-script = "api/[[route]].js"
+script = "functions/[[routes]].js"
 
 [env.production]
-vars = { YOUTUBE_API_KEY = "", CLOUDFLARE_COMPATIBILITY_FLAG = "nodejs_compat" } 
+vars = { YOUTUBE_API_KEY = "[your_api_key]" } 

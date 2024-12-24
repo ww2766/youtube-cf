@@ -1,31 +1,32 @@
+import { handleCORS } from './middleware/cors';
+
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    
-    // 处理CORS预检请求
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      });
-    }
-
-    // API路由处理
-    if (url.pathname.startsWith('/api/')) {
-      const route = url.pathname.replace('/api/', '');
+    try {
+      const url = new URL(request.url);
       
-      switch (route) {
-        case 'analyze':
-          const { onRequest } = await import('./api/analyze');
-          return onRequest({ request, env });
-        default:
-          return new Response('Not Found', { status: 404 });
+      // 处理CORS预检请求
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+          },
+        });
       }
-    }
 
-    return new Response('Not Found', { status: 404 });
+      // API路由处理
+      if (url.pathname === '/api/analyze') {
+        const { onRequest } = await import('./api/analyze');
+        const response = await onRequest({ request, env });
+        return handleCORS(response);
+      }
+
+      return handleCORS(new Response('Not Found', { status: 404 }));
+    } catch (error) {
+      console.error('Route error:', error);
+      return handleCORS(new Response('Internal Server Error', { status: 500 }));
+    }
   }
 } 
