@@ -3,15 +3,5 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1",
-      "methods": ["GET", "POST", "OPTIONS"]
-    }
-  ],
-  "env": {
-    "YOUTUBE_API_KEY": "@youtube_api_key"
-  }
+  "outputDirectory": ".next"
 } 
