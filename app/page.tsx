@@ -63,8 +63,8 @@ export default function Home() {
         throw new Error(data.error || '发生未知错误');
       }
     } catch (err) {
-      console.error('错误:', err);
-      setError(err instanceof Error ? err.message : '视频分析失败');
+      console.error('请求错误:', err);
+      setError('网络请求失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -77,11 +77,11 @@ export default function Home() {
           <h1 className="flex items-center justify-center text-6xl font-bold mb-8">
             <FaYoutube className="text-red-600 mr-4 animate-pulse" />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-300 to-blue-300">
-              YouTube视频分析
+              YouTube视频下载
             </span>
           </h1>
           <p className="text-gray-300 text-xl max-w-2xl mx-auto leading-relaxed">
-            快速、简单、高效地分析YouTube视频信息
+            快速、简单、高效地下载YouTube视频
           </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function Home() {
             {[
               '找到想要分析的YouTube视频',
               '从浏览器复制视频链接',
-              '将链接粘贴到上方输入框',
+              '将链接粘贴���上方输入框',
               '点击"分析"按钮等待结果'
             ].map((step, index) => (
               <li key={index} className="flex items-center space-x-4">

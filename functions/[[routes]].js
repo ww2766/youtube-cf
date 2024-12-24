@@ -4,8 +4,10 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url);
-      console.log('[Routes] Request URL:', url.pathname);
-      console.log('[Routes] Environment check:', {
+      console.log('[Routes] 完整请求URL:', request.url);
+      console.log('[Routes] 主机名:', url.hostname);
+      console.log('[Routes] 路径:', url.pathname);
+      console.log('[Routes] 环境检查:', {
         hasYouTubeApiKey: !!env.YOUTUBE_API_KEY,
         method: request.method,
         headers: Object.fromEntries(request.headers)
@@ -56,8 +58,11 @@ export default {
         }
       });
     } catch (error) {
-      console.error('[Routes] Error:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+      console.error('[Routes] 错误:', error);
+      return new Response(JSON.stringify({ 
+        error: '服务器内部错误',
+        details: error.message 
+      }), { 
         status: 500,
         headers: {
           'Content-Type': 'application/json',
