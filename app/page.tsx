@@ -29,7 +29,8 @@ export default function Home() {
 
     try {
       const apiUrl = new URL('/api/analyze', window.location.origin);
-      console.log('发送请求到:', apiUrl.toString());
+      console.log('[前端] 发送请求到:', apiUrl.toString());
+      console.log('[前端] 请求数据:', { url });
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -39,17 +40,18 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
 
-      console.log('请求状态:', response.status);
-      console.log('响应头:', Object.fromEntries(response.headers));
+      console.log('[前端] 响应状态:', response.status);
+      console.log('[前端] 响应头:', Object.fromEntries(response.headers));
 
       const text = await response.text();
-      console.log('API响应:', { status: response.status, text });
+      console.log('[前端] 原始响应:', text);
 
       let data;
       try {
         data = JSON.parse(text);
+        console.log('[前端] 解析后的数据:', data);
       } catch (err) {
-        console.error('解析响应失败:', text);
+        console.error('[前端] 解析响应失败:', text);
         throw new Error('服务器返回了无效的响应，请稍后重试');
       }
 
@@ -57,14 +59,14 @@ export default function Home() {
         throw new Error(data.error || '视频分析失败');
       }
 
-      if (data.success) {
-        setVideoInfo(data.videoInfo);
-      } else {
+      if (!data.success) {
         throw new Error(data.error || '发生未知错误');
       }
+
+      setVideoInfo(data.videoInfo);
     } catch (err) {
-      console.error('请求错误:', err);
-      setError('网络请求失败，请稍后重试');
+      console.error('[前端] 请求错误:', err);
+      setError(err instanceof Error ? err.message : '网络请求失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -178,7 +180,7 @@ export default function Home() {
             {[
               '找到想要分析的YouTube视频',
               '从浏览器复制视频链接',
-              '将链接粘贴上方输入框',
+              '��链接粘贴上方输入框',
               '点击"分析"按钮等待结果'
             ].map((step, index) => (
               <li key={index} className="flex items-center space-x-4">

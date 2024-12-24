@@ -42,7 +42,10 @@ interface YouTubeVideoResponse {
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
     console.log('[Analyze] 开始处理请求');
-    
+    console.log('[Analyze] 环境变量:', {
+      API密钥存在: !!context.env.YOUTUBE_API_KEY
+    });
+
     // 验证请求方法
     if (context.request.method !== 'POST') {
       throw new Error('仅支持 POST 请求');
@@ -54,13 +57,17 @@ export async function onRequest(context: { request: Request; env: Env }) {
     }
 
     // 解析请求体
-    const { url } = await context.request.json();
-    if (!url) {
+    const body = await context.request.json();
+    console.log('[Analyze] 请求体:', body);
+
+    if (!body.url) {
       throw new Error('缺少视频 URL');
     }
 
     // 提取视频ID
-    const videoId = extractVideoId(url);
+    const videoId = extractVideoId(body.url);
+    console.log('[Analyze] 提取的视频ID:', videoId);
+
     if (!videoId) {
       throw new Error('无效的 YouTube 视频链接');
     }
