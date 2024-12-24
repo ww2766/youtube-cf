@@ -2,55 +2,10 @@ interface Env {
   YOUTUBE_API_KEY: string;
 }
 
-interface YouTubeVideoResponse {
-  items: Array<{
-    id: string;
-    snippet: {
-      title: string;
-      description: string;
-      thumbnails: {
-        default: { url: string; width: number; height: number };
-        medium: { url: string; width: number; height: number };
-        high: { url: string; width: number; height: number };
-        standard?: { url: string; width: number; height: number };
-        maxres?: { url: string; width: number; height: number };
-      };
-      channelTitle: string;
-      publishedAt: string;
-    };
-    contentDetails: {
-      duration: string;
-      dimension: string;
-      definition: string;
-      caption: string;
-      licensedContent: boolean;
-      projection: string;
-    };
-    statistics?: {
-      viewCount: string;
-      likeCount: string;
-      favoriteCount: string;
-      commentCount: string;
-    };
-  }>;
-  pageInfo: {
-    totalResults: number;
-    resultsPerPage: number;
-  };
-}
-
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
     console.log('[Analyze] 开始处理请求');
-    console.log('[Analyze] 环境变量:', {
-      API密钥存在: !!context.env.YOUTUBE_API_KEY
-    });
-
-    // 验证请求方法
-    if (context.request.method !== 'POST') {
-      throw new Error('仅支持 POST 请求');
-    }
-
+    
     // 验证 API 密钥
     if (!context.env.YOUTUBE_API_KEY) {
       throw new Error('YouTube API 密钥未配置');
@@ -72,16 +27,14 @@ export async function onRequest(context: { request: Request; env: Env }) {
       throw new Error('无效的 YouTube 视频链接');
     }
 
-    console.log('[Analyze] 处理视频ID:', videoId);
-
-    // 调用 YouTube Data API
+    // 调用 YouTube Data API v3
     const apiUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
-    apiUrl.searchParams.append('key', context.env.YOUTUBE_API_KEY);
-    apiUrl.searchParams.append('id', videoId);
-    apiUrl.searchParams.append('part', 'snippet,contentDetails,statistics');
+    apiUrl.searchParams.set('key', context.env.YOUTUBE_API_KEY);
+    apiUrl.searchParams.set('id', videoId);
+    apiUrl.searchParams.set('part', 'snippet,contentDetails,statistics');
 
     console.log('[Analyze] 调用 YouTube API:', apiUrl.toString());
-    
+
     const response = await fetch(apiUrl);
     if (!response.ok) {
       const error = await response.json();
@@ -89,7 +42,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       throw new Error(error.error?.message || 'YouTube API 请求失败');
     }
 
-    const data = await response.json() as YouTubeVideoResponse;
+    const data = await response.json();
     console.log('[Analyze] YouTube API 响应:', data);
 
     if (!data.items?.length) {
@@ -97,36 +50,23 @@ export async function onRequest(context: { request: Request; env: Env }) {
     }
 
     const video = data.items[0];
-    const formats = [
-      {
-        formatId: 'best',
-        quality: 'HD',
-        extension: 'mp4',
-        filesize: 0,
-        url: `https://www.youtube.com/watch?v=${videoId}`,
-      }
-    ];
-
-    // 格式化视频时长
-    const duration = formatDuration(video.contentDetails.duration);
 
     return new Response(
       JSON.stringify({
         success: true,
-        formats,
         videoInfo: {
           id: video.id,
           title: video.snippet.title,
           description: video.snippet.description,
           thumbnail: video.snippet.thumbnails.maxres?.url || 
                     video.snippet.thumbnails.high.url,
-          duration,
+          duration: formatDuration(video.contentDetails.duration),
           author: video.snippet.channelTitle,
           publishedAt: video.snippet.publishedAt,
-          statistics: video.statistics && {
+          statistics: {
             views: parseInt(video.statistics.viewCount),
             likes: parseInt(video.statistics.likeCount),
-            comments: parseInt(video.statistics.commentCount),
+            comments: parseInt(video.statistics.commentCount)
           }
         }
       }),
@@ -170,8 +110,7 @@ function extractVideoId(url: string): string | null {
     }
 
     return null;
-  } catch (error) {
-    console.error('Error extracting video ID:', error);
+  } catch {
     return null;
   }
 }
