@@ -178,7 +178,7 @@ export default function Home() {
             {[
               '找到想要分析的YouTube视频',
               '从浏览器复制视频链接',
-              '将链接粘贴���上方输入框',
+              '将链接粘贴上方输入框',
               '点击"分析"按钮等待结果'
             ].map((step, index) => (
               <li key={index} className="flex items-center space-x-4">
