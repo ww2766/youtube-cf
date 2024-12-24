@@ -1,4 +1,14 @@
-export async function onRequest({ request, next, env }) {
+interface Env {
+  YOUTUBE_API_KEY: string;
+}
+
+interface MiddlewareArgs {
+  request: Request;
+  next: () => Promise<Response>;
+  env: Env;
+}
+
+export async function onRequest({ request, next, env }: MiddlewareArgs) {
   console.log('[Middleware] 请求路径:', new URL(request.url).pathname);
   
   // 处理 CORS
