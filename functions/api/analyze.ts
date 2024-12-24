@@ -4,6 +4,12 @@ interface Env {
 
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
+    // 打印 API 密钥前几个字符（安全起见）
+    console.log('[API] API密钥状态:', {
+      存在: !!context.env.YOUTUBE_API_KEY,
+      前缀: context.env.YOUTUBE_API_KEY ? context.env.YOUTUBE_API_KEY.substring(0, 5) + '...' : 'none'
+    });
+
     // 验证 API 密钥
     if (!context.env.YOUTUBE_API_KEY) {
       throw new Error('API密钥未配置');
@@ -17,28 +23,41 @@ export async function onRequest(context: { request: Request; env: Env }) {
 
     // 提取视频ID
     const videoId = extractVideoId(url);
+    console.log('[API] 提取的视频ID:', videoId);
+
     if (!videoId) {
       throw new Error('无效的YouTube视频链接');
     }
 
-    // 调用 YouTube API
+    // 构建 YouTube API 请求
     const apiUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
     apiUrl.searchParams.set('key', context.env.YOUTUBE_API_KEY);
     apiUrl.searchParams.set('id', videoId);
     apiUrl.searchParams.set('part', 'snippet,contentDetails,statistics');
 
+    console.log('[API] 请求YouTube API:', apiUrl.toString().replace(context.env.YOUTUBE_API_KEY, 'HIDDEN_KEY'));
+
+    // 发送请求
     const response = await fetch(apiUrl);
     const data = await response.json();
 
+    // 记录响应状态
+    console.log('[API] YouTube响应状态:', response.status);
     if (!response.ok) {
+      console.error('[API] YouTube API错误:', data.error);
       throw new Error(data.error?.message || 'YouTube API请求失败');
     }
 
+    // 检查响应数据
     if (!data.items?.length) {
       throw new Error('未找到视频');
     }
 
     const video = data.items[0];
+    console.log('[API] 成功获取视频信息:', {
+      id: video.id,
+      title: video.snippet.title
+    });
 
     return new Response(
       JSON.stringify({
@@ -67,6 +86,7 @@ export async function onRequest(context: { request: Request; env: Env }) {
       }
     );
   } catch (error) {
+    console.error('[API] 错误:', error);
     return new Response(
       JSON.stringify({
         success: false,
