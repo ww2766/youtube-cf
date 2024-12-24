@@ -3,6 +3,8 @@ import { isValidYouTubeUrl } from '@/app/utils/validation';
 import { APIError, handleAPIError } from '@/app/utils/error';
 import { extractVideoId, formatDuration } from '@/app/utils/youtube';
 
+export const runtime = 'edge';
+
 export async function POST(request: NextRequest) {
   try {
     const { url } = await request.json();
