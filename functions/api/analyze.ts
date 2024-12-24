@@ -4,6 +4,25 @@ interface Env {
 
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
+    console.log('API Key configured:', !!context.env.YOUTUBE_API_KEY);
+    
+    if (!context.env.YOUTUBE_API_KEY) {
+      console.error('YouTube API key is not configured');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'API configuration error. Please contact administrator.'
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
+    }
+
     const { url } = await context.request.json();
     console.log('Received URL:', url);
 
@@ -14,9 +33,9 @@ export async function onRequest(context: { request: Request; env: Env }) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Invalid YouTube URL'
+          error: 'Invalid YouTube URL. Please check the URL and try again.'
         }),
-        { 
+        {
           status: 400,
           headers: {
             'Content-Type': 'application/json',
@@ -27,19 +46,36 @@ export async function onRequest(context: { request: Request; env: Env }) {
     }
 
     const apiUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${context.env.YOUTUBE_API_KEY}&part=snippet,contentDetails`;
-    console.log('API URL:', apiUrl);
+    console.log('Calling YouTube API...');
 
     const response = await fetch(apiUrl);
     const data = await response.json();
-    console.log('API Response:', data);
+    console.log('YouTube API Response:', data);
+
+    if (!response.ok) {
+      console.error('YouTube API Error:', data);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Failed to fetch video information from YouTube'
+        }),
+        {
+          status: response.status,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
+    }
 
     if (!data.items || data.items.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Video not found'
+          error: 'Video not found or is not accessible'
         }),
-        { 
+        {
           status: 404,
           headers: {
             'Content-Type': 'application/json',
@@ -79,13 +115,13 @@ export async function onRequest(context: { request: Request; env: Env }) {
       }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('API Error:', error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: 'Failed to analyze video'
+        error: 'An unexpected error occurred. Please try again later.'
       }),
-      { 
+      {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
@@ -97,17 +133,22 @@ export async function onRequest(context: { request: Request; env: Env }) {
 }
 
 function extractVideoId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
-    /youtube\.com\/embed\/([^&\n?#]+)/,
-    /youtube\.com\/v\/([^&\n?#]+)/,
-    /youtube\.com\/shorts\/([^&\n?#]+)/
-  ];
+  try {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+      /youtube\.com\/embed\/([^&\n?#]+)/,
+      /youtube\.com\/v\/([^&\n?#]+)/,
+      /youtube\.com\/shorts\/([^&\n?#]+)/
+    ];
 
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error extracting video ID:', error);
+    return null;
   }
-
-  return null;
 } 

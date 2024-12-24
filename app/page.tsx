@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaYoutube, FaSpinner } from 'react-icons/fa';
+import { FaYoutube, FaSpinner, FaDownload, FaInfoCircle } from 'react-icons/fa';
 
 interface VideoInfo {
   title: string;
@@ -18,11 +18,17 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!url.trim()) {
+      setError('Please enter a YouTube URL');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setVideoInfo(null);
 
     try {
+      console.log('Analyzing URL:', url);
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
@@ -32,14 +38,14 @@ export default function Home() {
       });
 
       const text = await response.text();
-      console.log('Response:', { status: response.status, text });
+      console.log('API Response:', { status: response.status, text });
 
       let data;
       try {
         data = JSON.parse(text);
       } catch (err) {
         console.error('Failed to parse response:', text);
-        throw new Error('Invalid response from server');
+        throw new Error('Server returned invalid response. Please try again later.');
       }
 
       if (!response.ok) {
@@ -60,32 +66,36 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-      <div className="max-w-4xl mx-auto px-4 py-16">
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="flex items-center justify-center text-5xl font-bold mb-4">
+          <h1 className="flex items-center justify-center text-6xl font-bold mb-6 text-white">
             <FaYoutube className="text-red-600 mr-4" />
-            YouTube Analyzer
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+              YouTube Analyzer
+            </span>
           </h1>
-          <p className="text-gray-400">
-            Enter a YouTube URL to analyze video information
+          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+            Analyze YouTube videos quickly and easily. Just paste the URL below.
           </p>
         </div>
 
-        <div className="bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Input Form */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 mb-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="relative">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Paste YouTube URL here..."
-                className="w-full p-4 pr-32 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full p-4 pr-36 bg-white/5 rounded-xl border border-white/10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-400"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="absolute right-2 top-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors disabled:bg-gray-500"
+                className="absolute right-2 top-2 px-8 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg transition-all disabled:from-gray-600 disabled:to-gray-700 text-white font-medium"
               >
                 {loading ? (
                   <FaSpinner className="animate-spin" />
@@ -94,31 +104,64 @@ export default function Home() {
                 )}
               </button>
             </div>
+
+            <div className="flex items-center justify-center space-x-8 text-gray-400">
+              <div className="flex items-center">
+                <FaDownload className="mr-2" />
+                <span>Unlimited Analysis</span>
+              </div>
+              <div className="flex items-center">
+                <FaInfoCircle className="mr-2" />
+                <span>HD Quality Info</span>
+              </div>
+            </div>
           </form>
         </div>
 
+        {/* Error Message */}
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 rounded-lg p-4 mb-8">
-            {error}
+          <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-6 mb-8">
+            <div className="flex items-center text-red-200">
+              <FaInfoCircle className="mr-3 flex-shrink-0" />
+              <p>{error}</p>
+            </div>
           </div>
         )}
 
+        {/* Video Info */}
         {videoInfo && (
-          <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden">
             <img
               src={videoInfo.thumbnail}
               alt={videoInfo.title}
-              className="w-full object-cover"
+              className="w-full h-64 object-cover"
             />
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-2">{videoInfo.title}</h2>
-              <div className="text-gray-400">
-                <p>Author: {videoInfo.author}</p>
-                <p>Duration: {videoInfo.duration}</p>
+            <div className="p-8">
+              <h2 className="text-2xl font-bold mb-4 text-white">{videoInfo.title}</h2>
+              <div className="grid grid-cols-2 gap-4 text-gray-300">
+                <div>
+                  <p className="text-gray-400">Author</p>
+                  <p className="font-medium">{videoInfo.author}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Duration</p>
+                  <p className="font-medium">{videoInfo.duration}</p>
+                </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Instructions */}
+        <div className="mt-12 text-gray-400">
+          <h3 className="text-xl font-semibold mb-4 text-white">How to use:</h3>
+          <ol className="list-decimal list-inside space-y-2">
+            <li>Find a YouTube video you want to analyze</li>
+            <li>Copy the video URL from your browser</li>
+            <li>Paste the URL in the input field above</li>
+            <li>Click "Analyze" and wait for the results</li>
+          </ol>
+        </div>
       </div>
     </main>
   );
