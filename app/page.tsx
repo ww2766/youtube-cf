@@ -93,8 +93,9 @@ export default function Home() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="在此粘贴YouTube视频链接..."
-                className="w-full p-4 pr-36 bg-white/5 rounded-xl border border-white/10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-white placeholder-gray-400"
-                style={{ color: 'white' }}
+                className="w-full p-4 pr-36 bg-black/20 rounded-xl border border-white/20 
+                  focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none 
+                  transition-all text-blue-100 placeholder-gray-400"
               />
               <button
                 type="submit"

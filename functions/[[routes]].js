@@ -22,30 +22,45 @@ export default {
         });
       }
 
+      // 移除开头的斜杠进行匹配
+      const path = url.pathname.replace(/^\//, '');
+      console.log('[Routes] 处理路径:', path);
+
       // API路由处理
-      if (url.pathname === '/api/analyze') {
-        console.log('[Routes] 处理 /api/analyze 请求');
+      if (path === 'api/analyze') {
+        console.log('[Routes] 处理 api/analyze 请求');
         console.log('[Routes] 请求方法:', request.method);
         console.log('[Routes] 请求头:', Object.fromEntries(request.headers));
         
         const { onRequest } = await import('./api/analyze');
-        return onRequest({ request, env });
+        const response = await onRequest({ request, env });
+        
+        // 确保返回正确的CORS头
+        const headers = new Headers(response.headers);
+        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        headers.set('Access-Control-Allow-Headers', 'Content-Type');
+        
+        return new Response(response.body, {
+          status: response.status,
+          headers
+        });
       }
 
       // 如果不是API请求，返回404
-      return new Response('Not Found', { 
+      return new Response(JSON.stringify({ error: 'Not Found' }), { 
         status: 404,
         headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         }
       });
     } catch (error) {
       console.error('[Routes] Error:', error);
-      return new Response('Internal Server Error', { 
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
         status: 500,
         headers: {
-          'Content-Type': 'text/plain',
+          'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         }
       });
