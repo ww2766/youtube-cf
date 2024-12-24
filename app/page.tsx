@@ -13,7 +13,6 @@ export default function Home() {
     setError(null);
 
     try {
-      console.log('Sending request to:', '/api/analyze');
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
