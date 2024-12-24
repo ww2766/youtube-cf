@@ -4,49 +4,38 @@ interface Env {
 
 export async function onRequest(context: { request: Request; env: Env }) {
   try {
-    console.log('[Analyze] 开始处理请求');
-    
     // 验证 API 密钥
     if (!context.env.YOUTUBE_API_KEY) {
-      throw new Error('YouTube API 密钥未配置');
+      throw new Error('API密钥未配置');
     }
 
     // 解析请求体
-    const body = await context.request.json();
-    console.log('[Analyze] 请求体:', body);
-
-    if (!body.url) {
-      throw new Error('缺少视频 URL');
+    const { url } = await context.request.json();
+    if (!url) {
+      throw new Error('请提供视频URL');
     }
 
     // 提取视频ID
-    const videoId = extractVideoId(body.url);
-    console.log('[Analyze] 提取的视频ID:', videoId);
-
+    const videoId = extractVideoId(url);
     if (!videoId) {
-      throw new Error('无效的 YouTube 视频链接');
+      throw new Error('无效的YouTube视频链接');
     }
 
-    // 调用 YouTube Data API v3
+    // 调用 YouTube API
     const apiUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
     apiUrl.searchParams.set('key', context.env.YOUTUBE_API_KEY);
     apiUrl.searchParams.set('id', videoId);
     apiUrl.searchParams.set('part', 'snippet,contentDetails,statistics');
 
-    console.log('[Analyze] 调用 YouTube API:', apiUrl.toString());
-
     const response = await fetch(apiUrl);
+    const data = await response.json();
+
     if (!response.ok) {
-      const error = await response.json();
-      console.error('[Analyze] YouTube API 错误:', error);
-      throw new Error(error.error?.message || 'YouTube API 请求失败');
+      throw new Error(data.error?.message || 'YouTube API请求失败');
     }
 
-    const data = await response.json();
-    console.log('[Analyze] YouTube API 响应:', data);
-
     if (!data.items?.length) {
-      throw new Error('视频不存在或无法访问');
+      throw new Error('未找到视频');
     }
 
     const video = data.items[0];
@@ -78,14 +67,13 @@ export async function onRequest(context: { request: Request; env: Env }) {
       }
     );
   } catch (error) {
-    console.error('[Analyze] 错误:', error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : '处理请求时发生错误'
+        error: error instanceof Error ? error.message : '未知错误'
       }),
       {
-        status: error instanceof Error && error.message.includes('API') ? 503 : 500,
+        status: 400,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
@@ -96,23 +84,19 @@ export async function onRequest(context: { request: Request; env: Env }) {
 }
 
 function extractVideoId(url: string): string | null {
-  try {
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
-      /youtube\.com\/embed\/([^&\n?#]+)/,
-      /youtube\.com\/v\/([^&\n?#]+)/,
-      /youtube\.com\/shorts\/([^&\n?#]+)/
-    ];
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+    /youtube\.com\/embed\/([^&\n?#]+)/,
+    /youtube\.com\/v\/([^&\n?#]+)/,
+    /youtube\.com\/shorts\/([^&\n?#]+)/
+  ];
 
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) return match[1];
-    }
-
-    return null;
-  } catch {
-    return null;
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
   }
+
+  return null;
 }
 
 function formatDuration(isoDuration: string): string {
