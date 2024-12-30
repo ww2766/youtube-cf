@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       throw new APIError('请提供有效的视频URL', 400);
     }
     console.log('开始调测3');
-    if (!isValidYouTubeUrl(url)) {
-      throw new APIError('无效的YouTube视频链接', 400);
-    }
+    //if (!isValidYouTubeUrl(url)) {
+    //  throw new APIError('无效的YouTube视频链接', 400);
+    //}
     console.log('开始调测4');
     const apiKey = process.env.YOUTUBE_API_KEY;
     console.log('API Key status:', {
