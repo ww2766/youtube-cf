@@ -164,3 +164,20 @@ function extractVideoId(url: string): string | null {
   }
   return null;
 }
+function formatDuration(isoDuration: string): string {
+  const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+  if (!match) return '未知';
+
+  const hours = (match[1] || '').replace('H', '');
+  const minutes = (match[2] || '').replace('M', '');
+  const seconds = (match[3] || '').replace('S', '');
+
+  let result = '';
+  if (hours) result += `${hours}:`;
+  if (minutes) result += `${minutes.padStart(2, '0')}:`;
+  else result += '00:';
+  if (seconds) result += seconds.padStart(2, '0');
+  else result += '00';
+
+  return result;
+} 
