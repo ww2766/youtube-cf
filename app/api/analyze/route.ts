@@ -11,30 +11,30 @@ export async function POST(request: NextRequest) {
     if (!request.body) {
       throw new APIError('请求体不能为空', 400);
     }
-
+    console.log('开始调测1');
     const { url } = await request.json().catch(() => {
       console.error('JSON解析失败');
       return {};
     });
-    
+    console.log('开始调测2');
     if (!url || typeof url !== 'string') {
       throw new APIError('请提供有效的视频URL', 400);
     }
-
+    console.log('开始调测3');
     if (!isValidYouTubeUrl(url)) {
       throw new APIError('无效的YouTube视频链接', 400);
     }
-
+    console.log('开始调测4');
     const apiKey = process.env.YOUTUBE_API_KEY;
     console.log('API Key status:', {
       exists: !!apiKey,
       length: apiKey?.length || 0
     });
-    
+    console.log('开始调测5');
     if (!apiKey) {
       throw new APIError('API密钥未配置', 500);
     }
-
+    console.log('开始调测6');
     const videoId = extractVideoId(url);
     if (!videoId) {
       throw new APIError('无法提取视频ID', 400);
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
-
+    console.log('开始调测6');
     try {
       const apiUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
       apiUrl.searchParams.set('key', apiKey);
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       });
 
       clearTimeout(timeout);
-
+      console.log('开始调测7');
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new APIError(
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       if (!data.items?.length) {
         throw new APIError('未找到视频', 404);
       }
-
+      console.log('开始调测8');
       const video = data.items[0];
 
       return NextResponse.json({
@@ -113,13 +113,13 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: unknown) {
     const err = error as Error;
-    
+    console.log('开始调测9');
     console.error('API Error:', {
       name: err?.name || 'UnknownError',
       message: err?.message || 'Unknown error occurred',
       stack: err?.stack || 'No stack trace available'
     });
-
+    console.log('开始调测10');
     if (error instanceof APIError) {
       return NextResponse.json({
         success: false,
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         }
       });
     }
-
+    console.log('开始调测11');
     return NextResponse.json({
       success: false,
       error: '服务器内部错误',
