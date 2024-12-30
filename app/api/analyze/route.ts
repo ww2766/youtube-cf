@@ -6,6 +6,7 @@ import { extractVideoId, formatDuration } from '@/app/utils/youtube';
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
+  console.log('开始调测');
   try {
     if (!request.body) {
       throw new APIError('请求体不能为空', 400);
